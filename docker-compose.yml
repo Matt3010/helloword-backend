@@ -1,0 +1,13 @@
+services:
+  db:
+    container_name: prisma_postgres
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: prisma_user
+      POSTGRES_PASSWORD: TGHeBi191tyOCycIhd4G5gLecnETKr
+      POSTGRES_DB: prisma_db
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
