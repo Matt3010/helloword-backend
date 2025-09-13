@@ -15,7 +15,7 @@ export class UsersService {
         const provider = 'google';
         const providerId = profile.id;
 
-        const existingAuth = await this.usersRepository.findAuthMethod(provider, providerId);
+        const existingAuth: { user: UserWithRelations } | null = await this.usersRepository.findAuthMethod(provider, providerId);
         if (existingAuth) {
             await this.usersRepository.updateUserProfileLogin(existingAuth.user.id);
             return existingAuth.user;
