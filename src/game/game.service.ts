@@ -3,12 +3,8 @@ import {UsersService} from '../users/users.service';
 import {GameGateway} from './game.gateway';
 import {GameRepository} from './game.repository';
 import {Game, UserProfile} from '@prisma/client';
-import axios from 'axios';
+import axios, {AxiosResponse} from 'axios';
 import {SanitizedGame} from "./entities/sanitized-game";
-
-interface OllamaGenerateResponse {
-    response: string;
-}
 
 @Injectable()
 export class GameService implements OnModuleInit {
@@ -44,27 +40,33 @@ export class GameService implements OnModuleInit {
     }
 
     private async generateWord(): Promise<string> {
-        if ((process.env.AI_PROVIDER || 'ollama') === 'ollama') {
-            const url: string = (process.env.OLLAMA_URL || 'http://localhost:11434') + '/api/generate';
-            const improvedPrompt: string = 'Your task is to provide a single, common Italian noun. Respond with only the word itself in lowercase. Do not include any other text, punctuation, or explanations.';
+        let word: string = '?';
 
-            try {
-                const res = await axios.post<OllamaGenerateResponse>(url, {
-                    model: 'llama3.2:1b',
-                    prompt: improvedPrompt,
-                    stream: false
-                });
+        try {
+            const resWord: AxiosResponse<string[]> = await axios.get<string[]>(
+                'https://random-word-api.herokuapp.com/word',
+                {params: {lang: 'it', number: 1}}
+            );
 
-                const word: string = (res.data?.response || '').trim();
-                return word || '?';
-
-            } catch (error) {
-                console.error('Failed to generate word from Ollama:', error);
+            word = (resWord.data?.[0] || '').trim();
+            if (!word) {
+                console.warn('API non ha restituito una parola.');
                 return '?';
             }
+            return word;
+
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error(`Errore Axios durante l'elaborazione della parola "${word}":`, error.response?.data || error.message);
+            } else if (error instanceof SyntaxError) {
+                console.error(`Errore di parsing JSON per la parola "${word}":`, error.message);
+            } else {
+                console.error(`Errore imprevisto per la parola "${word}":`, error);
+            }
+            return word || '?';
         }
-        return '?';
     }
+
 
     public async newRound(): Promise<SanitizedGame> {
         const word: string = await this.generateWord();
@@ -72,7 +74,6 @@ export class GameService implements OnModuleInit {
         const game: Game = await this.gameRepository.create(word, initial);
         this.gateway.server.emit('word:new', {initial: game.initial, createdAt: game.createdAt});
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const {word: _, ...sanitizedGame} = game;
         return sanitizedGame;
     }
@@ -105,14 +106,23 @@ export class GameService implements OnModuleInit {
             throw new BadRequestException('No active game');
         }
 
-        if (game.word.toLowerCase() === guessWord.toLowerCase()) {
+        // Helper function for normalization
+        const normalizeString: (str: string) => string = (str: string): string => {
+            return str
+                .normalize('NFD') // Decomposes accented characters into base character + accent
+                .replace(/[\u0300-\u036f]/g, '') // Removes the accent characters
+                .toLowerCase(); // Converts to lowercase
+        };
+
+        const normalizedGameWord: string = normalizeString(game.word);
+        const normalizedGuessWord: string = normalizeString(guessWord);
+
+        if (normalizedGameWord === normalizedGuessWord) {
             await this.usersService.addScore(userId, 10);
-            const newGame: SanitizedGame = await this.newRound();
-            this.gateway.server.emit('word:guessed', {winner: userId, newInitial: newGame.initial});
+            await this.newRound();
             return {correct: true};
         } else {
-            const updatedProfile: UserProfile = await this.gameRepository.decrementUserAttempts(userId);
-            this.gateway.server.emit('user:attempt', {userId, attemptsLeft: updatedProfile.attemptsLeft});
+            await this.gameRepository.decrementUserAttempts(userId);
             return {correct: false};
         }
     }
