@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as jwt from 'jsonwebtoken';
+import {UserWithRelations} from "../users/users.repository";
 
 @Injectable()
 export class AuthService {
   constructor(private readonly usersService: UsersService) {}
-  async findOrCreateFromGoogle(profile: any) {
+  async findOrCreateFromGoogle(profile: any): Promise<UserWithRelations> {
     return this.usersService.findOrCreateFromGoogle(profile);
   }
-  async issueToken(user: any) {
+  async issueToken(user: any): Promise<string> {
     const payload = { sub: user.id };
     return jwt.sign(payload, process.env.JWT_SECRET || 'change_me', { expiresIn: '7d' });
   }

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, UserProfile, AuthenticationMethod } from '@prisma/client';
 
-type UserWithRelations = User & {
+export type UserWithRelations = User & {
     profile: UserProfile | null;
     authMethods: AuthenticationMethod[];
 };

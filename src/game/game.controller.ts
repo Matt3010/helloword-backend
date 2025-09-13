@@ -4,28 +4,30 @@ import {Controller, Get, Post, Body, Req, UseGuards} from '@nestjs/common';
 import {GameService} from './game.service';
 import {GuessDto} from '../common/dtos/guess.dto';
 import {Request} from 'express';
-import {AuthGuard} from "@nestjs/passport"; // Keep this import
+import {JwtAuthGuard} from "../auth/guards/jwt.guard";
+import {SanitizedGame} from "./entities/sanitized-game";
+import {UserProfile} from "@prisma/client";
 
 @Controller('game')
 export class GameController {
     constructor(private readonly gameService: GameService) {
     }
 
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(JwtAuthGuard)
     @Get('current')
-    async current() {
+    async current(): Promise<SanitizedGame | null> {
         return this.gameService.getCurrent();
     }
 
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(JwtAuthGuard)
     @Get('leaderboard')
-    async leaderboard() {
+    async leaderboard(): Promise<UserProfile[]> {
         return this.gameService.leaderboard();
     }
 
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(JwtAuthGuard)
     @Post('guess')
-    async guess(@Body() dto: GuessDto, @Req() req: Request) {
+    async guess(@Body() dto: GuessDto, @Req() req: Request): Promise<{correct: boolean}> {
         const user = req.user as any;
         console.log(user)
         return await this.gameService.guess(user.id, dto.word);

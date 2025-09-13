@@ -4,15 +4,17 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { UsersModule } from '../users/users.module';
+import {JwtStrategy} from "./strategies/jwt.strategy";
 
 @Module({
   imports: [
-      PassportModule.register({ session: false }),
+      PassportModule.register({ session: true }),
       UsersModule
   ],
   providers: [
       AuthService,
-      GoogleStrategy
+      GoogleStrategy,
+      JwtStrategy,
   ],
   controllers: [
       AuthController
