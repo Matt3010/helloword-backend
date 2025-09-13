@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { User, UserProfile, AuthenticationMethod } from '@prisma/client';
+import {Profile} from "passport-google-oauth20";
 
 export type UserWithRelations = User & {
     profile: UserProfile | null;
@@ -18,11 +19,12 @@ export class UsersRepository {
         });
     }
 
-    async createUserWithProfileAndAuth(profile: any, provider: string, providerId: string): Promise<UserWithRelations> {
-        const displayName = profile.displayName || profile.emails?.[0]?.value;
+    async createUserWithProfileAndAuth(profile: Profile, provider: string, providerId: string): Promise<UserWithRelations> {
+        const displayName: string | undefined = profile.displayName;
+        const picture: string | null = profile._json.picture || null;
         return this.prisma.user.create({
             data: {
-                profile: { create: { displayName, lastLogin: new Date(), attemptsLeft: 3, lastReset: new Date() } },
+                profile: { create: { displayName, picture, lastLogin: new Date(), attemptsLeft: 3, lastReset: new Date() } },
                 authMethods: { create: { provider, providerId } },
             },
             include: { profile: true, authMethods: true },
@@ -31,10 +33,6 @@ export class UsersRepository {
 
     async updateUserProfileLogin(userId: string): Promise<UserProfile> {
         return this.prisma.userProfile.update({ where: { userId }, data: { lastLogin: new Date() } });
-    }
-
-    async updateUserProfileAttempts(userId: string, attemptsLeft: number): Promise<UserProfile> {
-        return this.prisma.userProfile.update({ where: { userId }, data: { attemptsLeft } });
     }
 
     async incrementUserScore(userId: string, delta: number): Promise<UserProfile> {

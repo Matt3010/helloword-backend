@@ -7,14 +7,6 @@ export class UsersService {
     constructor(private readonly usersRepository: UsersRepository) {}
 
     /**
-     * Finds an authentication method by provider and providerId.
-     * @returns The user associated with the auth method, including profile and other auth methods, or null if not found.
-     */
-    async findAuthMethod(provider: string, providerId: string): Promise<{ user: UserWithRelations } | null> {
-        return this.usersRepository.findAuthMethod(provider, providerId);
-    }
-
-    /**
      * Finds an existing user via their Google profile ID or creates a new one.
      * @param profile - The user profile object from Google OAuth.
      * @returns The found or created user, complete with their profile and auth methods.
@@ -25,31 +17,11 @@ export class UsersService {
 
         const existingAuth = await this.usersRepository.findAuthMethod(provider, providerId);
         if (existingAuth) {
-            // Se l'utente esiste, aggiorniamo la sua data di ultimo login
             await this.usersRepository.updateUserProfileLogin(existingAuth.user.id);
             return existingAuth.user;
         }
 
         return this.usersRepository.createUserWithProfileAndAuth(profile, provider, providerId);
-    }
-
-    /**
-     * Updates the last login timestamp for a user.
-     * @param userId - The ID of the user.
-     * @returns The updated user profile.
-     */
-    async upsertLogin(userId: string): Promise<UserProfile> {
-        return this.usersRepository.updateUserProfileLogin(userId);
-    }
-
-    /**
-     * Adjusts the number of attempts left for a user.
-     * @param userId - The ID of the user.
-     * @param attemptsLeft - The new number of attempts.
-     * @returns The updated user profile.
-     */
-    async adjustAttempts(userId: string, attemptsLeft: number): Promise<UserProfile> {
-        return this.usersRepository.updateUserProfileAttempts(userId, attemptsLeft);
     }
 
     /**

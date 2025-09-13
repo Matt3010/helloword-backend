@@ -8,8 +8,8 @@ generator client {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
+  id          String                 @id @default(uuid())
+  createdAt   DateTime               @default(now())
   profile     UserProfile?
   authMethods AuthenticationMethod[]
 }
@@ -22,15 +22,17 @@ model UserProfile {
   lastLogin    DateTime
   lastReset    DateTime @default(now())
   userId       String   @unique
+  picture      String?
   user         User     @relation(fields: [userId], references: [id])
 }
 
 model AuthenticationMethod {
-  id         String   @id @default(uuid())
+  id         String @id @default(uuid())
   provider   String
   providerId String
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  user       User   @relation(fields: [userId], references: [id])
+
   @@unique([provider, providerId])
 }
 
