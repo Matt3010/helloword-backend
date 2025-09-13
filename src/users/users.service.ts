@@ -1,4 +1,4 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {Injectable, UnauthorizedException} from '@nestjs/common';
 import {UsersRepository} from './users.repository';
 import {UserProfile} from '@prisma/client';
 import {Profile} from "passport-google-oauth20";
@@ -9,7 +9,11 @@ export class UsersService {
     }
 
     async findOrCreateUser(profile: Profile): Promise<UserProfile> {
-        return this.usersRepository.upsertUserProfile(profile);
+        try {
+            return await this.usersRepository.upsertUserProfile(profile);
+        } catch {
+            throw new UnauthorizedException();
+        }
     }
 
     async addScore(userId: string, delta: number): Promise<UserProfile> {
@@ -24,7 +28,7 @@ export class UsersService {
         const userProfile: UserProfile | null = await this.usersRepository.findProfileByUserId(userId);
 
         if (!userProfile) {
-            throw new NotFoundException(`User profile with ID "${userId}" not found`);
+            throw new UnauthorizedException();
         }
 
         return userProfile;

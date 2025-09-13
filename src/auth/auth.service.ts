@@ -1,7 +1,6 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable, UnauthorizedException} from '@nestjs/common';
 import {UsersService} from '../users/users.service';
 import * as jwt from 'jsonwebtoken';
-import {JsonWebTokenError} from 'jsonwebtoken';
 import {UserProfile} from "@prisma/client";
 
 @Injectable()
@@ -11,7 +10,7 @@ export class AuthService {
 
     async issueToken(user: any): Promise<string> {
         if (!process.env.JWT_SECRET) {
-            throw new JsonWebTokenError('JWT secret not provided');
+            throw new UnauthorizedException();
         }
 
         const payload = {sub: user.id};

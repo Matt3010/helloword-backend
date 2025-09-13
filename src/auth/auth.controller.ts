@@ -22,18 +22,8 @@ export class AuthController {
     @UseGuards(AuthGuard('google'))
     async googleAuthRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
         const user: UserProfile = req.user as any;
-        try {
-            const token: string = await this.authService.issueToken(user);
-            return res.redirect(`http://localhost:4200/auth/google/callback?authToken=${token}`);
-        } catch (e) {
-            console.log(e);
-            res.status(500).json({
-                statusCode: 500,
-                message: 'Internal Server Error: Application configuration is incomplete.',
-                error: 'JWT secret not provided'
-            });
-        }
-
+        const token: string = await this.authService.issueToken(user);
+        return res.redirect(`http://localhost:4200/auth/google/callback?authToken=${token}`);
     }
 
     @Get('me')

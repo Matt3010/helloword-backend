@@ -27,14 +27,12 @@ export class GameService implements OnModuleInit {
     }
 
     public async getCurrent(): Promise<SanitizedGame | null> {
-        throw new NotFoundException('Game does not exist');
-        //
-        // const game: Game | null = await this.gameRepository.findCurrent();
-        // if (!game) {
-        //     throw new NotFoundException('Game does not exist');
-        // }
-        // const {word, ...sanitizedGame} = game;
-        // return sanitizedGame;
+        const game: Game | null = await this.gameRepository.findCurrent();
+        if (!game) {
+            throw new NotFoundException('Game does not exist');
+        }
+        const {word, ...sanitizedGame} = game;
+        return sanitizedGame;
     }
 
     private async getFullCurrentGame(): Promise<Game | null> {
