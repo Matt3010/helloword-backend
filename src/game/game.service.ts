@@ -1,30 +1,40 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { GameGateway } from './game.gateway';
-import { GameRepository } from './game.repository';
-import { Game, UserProfile } from '@prisma/client';
+import {BadRequestException, Injectable, NotFoundException, OnModuleInit} from '@nestjs/common';
+import {UsersService} from '../users/users.service';
+import {GameGateway} from './game.gateway';
+import {GameRepository} from './game.repository';
+import {Game, UserProfile} from '@prisma/client';
 import axios from 'axios';
-import { SanitizedGame } from "./entities/sanitized-game";
+import {SanitizedGame} from "./entities/sanitized-game";
 
 interface OllamaGenerateResponse {
     response: string;
 }
 
 @Injectable()
-export class GameService {
+export class GameService implements OnModuleInit {
     constructor(
         private readonly gameRepository: GameRepository,
         private readonly usersService: UsersService,
         private readonly gateway: GameGateway,
-    ) {}
+    ) {
+    }
 
-    public async getCurrent(): Promise<SanitizedGame | null> {
+    async onModuleInit(): Promise<void> {
         const game: Game | null = await this.gameRepository.findCurrent();
         if (!game) {
-            return null;
+            await this.gameRepository.create('HelloWord', 'H');
         }
-        const { word, ...sanitizedGame } = game;
-        return sanitizedGame;
+    }
+
+    public async getCurrent(): Promise<SanitizedGame | null> {
+        throw new NotFoundException('Game does not exist');
+        //
+        // const game: Game | null = await this.gameRepository.findCurrent();
+        // if (!game) {
+        //     throw new NotFoundException('Game does not exist');
+        // }
+        // const {word, ...sanitizedGame} = game;
+        // return sanitizedGame;
     }
 
     private async getFullCurrentGame(): Promise<Game | null> {
@@ -62,10 +72,10 @@ export class GameService {
         const word: string = await this.generateWord();
         const initial: string = word[0].toUpperCase();
         const game: Game = await this.gameRepository.create(word, initial);
-        this.gateway.server.emit('word:new', { initial: game.initial, createdAt: game.createdAt });
+        this.gateway.server.emit('word:new', {initial: game.initial, createdAt: game.createdAt});
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { word: _, ...sanitizedGame } = game;
+        const {word: _, ...sanitizedGame} = game;
         return sanitizedGame;
     }
 
@@ -74,7 +84,7 @@ export class GameService {
         const lastReset = profile.lastReset || profile.lastLogin || new Date(0);
 
         if (new Date(lastReset).toDateString() !== now.toDateString()) {
-            return this.gameRepository.resetUserAttempts(profile.userId, now);
+            return this.gameRepository.resetUserAttempts(profile.id, now);
         }
         return profile;
     }
@@ -83,10 +93,8 @@ export class GameService {
         if (!userId) {
             throw new BadRequestException('Missing user id');
         }
-        let profile: UserProfile | null = await this.usersService.findProfileByUserId(userId);
-        if (!profile) {
-            throw new BadRequestException('User not found');
-        }
+
+        let profile: UserProfile = await this.usersService.findProfileByUserId(userId);
 
         profile = await this.resetUserTriesIfNeeded(profile);
 
@@ -102,12 +110,12 @@ export class GameService {
         if (game.word.toLowerCase() === guessWord.toLowerCase()) {
             await this.usersService.addScore(userId, 10);
             const newGame: SanitizedGame = await this.newRound();
-            this.gateway.server.emit('word:guessed', { winner: userId, newInitial: newGame.initial });
-            return { correct: true };
+            this.gateway.server.emit('word:guessed', {winner: userId, newInitial: newGame.initial});
+            return {correct: true};
         } else {
             const updatedProfile: UserProfile = await this.gameRepository.decrementUserAttempts(userId);
-            this.gateway.server.emit('user:attempt', { userId, attemptsLeft: updatedProfile.attemptsLeft });
-            return { correct: false };
+            this.gateway.server.emit('user:attempt', {userId, attemptsLeft: updatedProfile.attemptsLeft});
+            return {correct: false};
         }
     }
 

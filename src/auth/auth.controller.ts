@@ -2,24 +2,44 @@ import {Controller, Get, Req, Res, UseGuards} from '@nestjs/common';
 import {AuthService} from './auth.service';
 import {Request, Response} from 'express';
 import {AuthGuard} from '@nestjs/passport';
+import {JwtAuthGuard} from "./guards/jwt.guard";
+import {UserProfile} from "@prisma/client";
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-      private readonly authService: AuthService,
-  ) {}
+    constructor(
+        private readonly authService: AuthService,
+    ) {
+    }
 
-  @Get('google')
-  @UseGuards(AuthGuard('google'))
-  async googleAuth() {
-    // initiates Google OAuth2 login flow
-  }
+    @Get('google')
+    @UseGuards(AuthGuard('google'))
+    async googleAuth(): Promise<void> {
+        // initiates Google OAuth2 login flow
+    }
 
-  @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const user = req.user as any;
-    const token: string = await this.authService.issueToken(user);
-    return res.redirect(`http://localhost:4200/auth/google/callback?authToken=${token}&user=${JSON.stringify(user)}`);
-  }
+    @Get('google/callback')
+    @UseGuards(AuthGuard('google'))
+    async googleAuthRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
+        const user: UserProfile = req.user as any;
+        try {
+            const token: string = await this.authService.issueToken(user);
+            return res.redirect(`http://localhost:4200/auth/google/callback?authToken=${token}`);
+        } catch (e) {
+            console.log(e);
+            res.status(500).json({
+                statusCode: 500,
+                message: 'Internal Server Error: Application configuration is incomplete.',
+                error: 'JWT secret not provided'
+            });
+        }
+
+    }
+
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    me(@Req() req: Request): Promise<UserProfile> {
+        const {id} = req.user as any;
+        return this.authService.me(id);
+    }
 }
