@@ -40,30 +40,18 @@ export class GameService implements OnModuleInit {
     }
 
     private async generateWord(): Promise<string> {
-        let word: string = '?';
-
         try {
             const resWord: AxiosResponse<string[]> = await axios.get<string[]>(
                 'https://random-word-api.herokuapp.com/word',
                 {params: {lang: 'it', number: 1}}
             );
 
-            word = (resWord.data?.[0] || '').trim();
-            if (!word) {
-                console.warn('API non ha restituito una parola.');
-                return '?';
-            }
-            return word;
+            const word: string | undefined = resWord.data?.[0]?.trim();
+            return word || '?';
 
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                console.error(`Errore Axios durante l'elaborazione della parola "${word}":`, error.response?.data || error.message);
-            } else if (error instanceof SyntaxError) {
-                console.error(`Errore di parsing JSON per la parola "${word}":`, error.message);
-            } else {
-                console.error(`Errore imprevisto per la parola "${word}":`, error);
-            }
-            return word || '?';
+            console.error('Error getting word:', error);
+            return '?';
         }
     }
 
