@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import { GameService } from '../game/game.service';
+import {Injectable, Logger} from '@nestjs/common';
+import {Cron} from '@nestjs/schedule';
+import {GameService} from '../game/game.service';
 
 @Injectable()
 export class DailyTriesResetJob {
-    private readonly logger = new Logger(DailyTriesResetJob.name);
-    constructor(private readonly gameService: GameService) {}
+    private readonly logger: Logger = new Logger(DailyTriesResetJob.name);
+
+    constructor(private readonly gameService: GameService) {
+    }
 
     @Cron('0 0 * * *')
     async handleCron() {
