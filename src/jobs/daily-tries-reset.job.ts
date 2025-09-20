@@ -9,7 +9,7 @@ export class DailyTriesResetJob {
     constructor(private readonly gameService: GameService) {
     }
 
-    @Cron('0 0 * * *')
+    @Cron('0 0 * * *', {timeZone: 'Europe/Rome'})
     async handleCron() {
         this.logger.log('Resetting daily tries');
         await this.gameService.resetDailyTries();
