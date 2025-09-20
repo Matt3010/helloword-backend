@@ -23,7 +23,7 @@ export class AuthController {
     async googleAuthRedirect(@Req() req: Request, @Res() res: Response): Promise<void> {
         const user: UserProfile = req.user as any;
         const token: string = await this.authService.issueToken(user);
-        return res.redirect(`http://localhost:4200/auth/google/callback?authToken=${token}`);
+        return res.redirect(`http://localhost:${process.env.FE_PORT}/auth/google/callback?authToken=${token}`);
     }
 
     @Get('me')

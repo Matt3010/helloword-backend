@@ -5,9 +5,6 @@
   "scripts": {
     "start:dev": "nest start --watch --verbose",
     "build": "nest build",
-    "start": "node dist/main.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init",
     "docker-deploy": "docker build -t helloword-nest . && docker tag helloword-nest:latest matt3010/helloword-nest:latest && docker push matt3010/helloword-nest:latest"
   },
   "dependencies": {
