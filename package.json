@@ -5,7 +5,7 @@
   "scripts": {
     "start:dev": "nest start --watch --verbose",
     "build": "nest build",
-    "docker-deploy": "docker buildx build --platform linux/arm64 -t helloword-nest . && docker tag helloword-nest:latest matt3010/helloword-nest:latest && docker push matt3010/helloword-nest:latest"
+    "docker:deploy": "docker buildx build --platform linux/arm64 -t matt3010/helloword-webapp:latest . --push"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
